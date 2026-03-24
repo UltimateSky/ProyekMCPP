@@ -4,10 +4,8 @@ import {
   TextInput, Alert, Share 
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router'; // Import ini
+import { useFocusEffect } from 'expo-router';
 import { Target, FileText, Edit3, Check, Calendar } from 'lucide-react-native';
-
-// ... (Imports tetap sama)
 
 export default function ExploreAnalytics() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -16,22 +14,37 @@ export default function ExploreAnalytics() {
   const [tempLimit, setTempLimit] = useState('5000000');
   const [currentUser, setCurrentUser] = useState('');
 
-  const loadData = async () => {
+const loadData = async () => {
     try {
+      // 1. Ambil nama user, jika tidak ada pakai fallback Ferry
       const user = await AsyncStorage.getItem('@current_user');
-      if (!user) return;
-      setCurrentUser(user);
+      const activeName = user || "Ferry Irawan Limiadi";
+      setCurrentUser(activeName);
 
-      const savedTx = await AsyncStorage.getItem(`@tx_${user}`);
-      setTransactions(savedTx ? JSON.parse(savedTx) : []);
+      // 2. Ambil Transaksi (Cek kunci dengan nama DAN kunci global/kosong)
+      const savedWithName = await AsyncStorage.getItem(`@tx_${activeName}`);
+      const savedGlobal = await AsyncStorage.getItem(`@tx_`);
+      
+      // Gunakan data dari user, jika kosong pakai data global
+      const rawData = savedWithName || savedGlobal || "[]";
+      const parsedTx = JSON.parse(rawData);
+      
+      setTransactions(Array.isArray(parsedTx) ? parsedTx : []);
 
-      const savedProfile = await AsyncStorage.getItem(`@profile_${user}`);
+      // 3. Ambil Limit dari Profile
+      const savedProfile = await AsyncStorage.getItem(`@profile_${activeName}`);
       if (savedProfile) {
         const profile = JSON.parse(savedProfile);
-        setLimit(profile.limit);
-        setTempLimit(profile.limit.toString());
+        const val = Number(profile.limit) || 5000000;
+        setLimit(val);
+        setTempLimit(val.toString());
       }
-    } catch (e) { console.error(e); }
+      
+      console.log("Explore: Berhasil load data untuk", activeName);
+    } catch (e) { 
+      console.error("Explore Load Error:", e);
+      setTransactions([]);
+    }
   };
 
   useFocusEffect(
@@ -43,36 +56,47 @@ export default function ExploreAnalytics() {
   const saveLimit = async () => {
     const newLimit = parseInt(tempLimit) || 0;
     setLimit(newLimit);
-    await AsyncStorage.setItem(`@profile_${currentUser}`, JSON.stringify({ limit: newLimit }));
-    setIsEditingLimit(false);
+    try {
+      await AsyncStorage.setItem(`@profile_${currentUser}`, JSON.stringify({ limit: newLimit }));
+      setIsEditingLimit(false);
+      Alert.alert("Sukses", "Limit bulanan berhasil diperbarui");
+    } catch (e) {
+      Alert.alert("Error", "Gagal menyimpan limit");
+    }
   };
 
-
-  const exportToPDF = () => {
-    let report = `LAPORAN KEUANGAN - ${currentUser}\n`;
-    report += `Limit Bulanan: Rp ${limit.toLocaleString('id-ID')}\n\n`;
-    transactions.forEach((t, i) => {
-      report += `${i+1}. [${t.type.toUpperCase()}] ${t.title}: Rp ${t.amount.toLocaleString('id-ID')}\n`;
-    });
-    Share.share({ message: report });
-  };
-
-  // Kalkulasi total pengeluaran
+  // Kalkulasi total pengeluaran - DIPERKUAT agar anti-NaN
   const totalSpend = transactions
-    .filter(t => t.type === 'spending')
-    .reduce((s, t) => s + (Number(t.amount) || 0), 0); // Pastikan jadi Number
+    .filter(t => t && t.type === 'spending')
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   const usagePercent = limit > 0 ? (totalSpend / limit) * 100 : 0;
   const displayPercent = Math.min(usagePercent, 100);
+
+  const exportToPDF = () => {
+    let report = `LAPORAN KEUANGAN - ${currentUser}\n`;
+    report += `Limit Bulanan: Rp ${limit.toLocaleString('id-ID')}\n`;
+    report += `Total Pengeluaran: Rp ${totalSpend.toLocaleString('id-ID')}\n`;
+    report += `Status: ${usagePercent.toFixed(1)}% terpakai\n\n`;
+    report += `DETAIL TRANSAKSI:\n`;
+    
+    transactions.forEach((t, i) => {
+      const typeLabel = t.type === 'spending' ? '[KELUAR]' : '[MASUK]';
+      report += `${i+1}. ${typeLabel} ${t.title}: Rp ${(Number(t.amount) || 0).toLocaleString('id-ID')}\n`;
+    });
+    
+    Share.share({ message: report });
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financial Analysis</Text>
-        <Text style={styles.headerSub}>{currentUser}</Text>
+        <Text style={styles.headerSub}>User: {currentUser}</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Card Limit */}
         <View style={styles.card}>
           <View style={styles.cardRowBetween}>
             <View style={{flexDirection:'row', alignItems:'center', gap:8}}>
@@ -96,14 +120,13 @@ export default function ExploreAnalytics() {
             <Text style={styles.limitVal}>Rp {limit.toLocaleString('id-ID')}</Text>
           )}
 
-          {/* Bar Progress Responsif */}
           <View style={styles.progressContainer}>
             <View 
               style={[
                 styles.progressFill, 
                 { 
                   width: `${displayPercent}%`, 
-                  backgroundColor: usagePercent > 80 ? '#ef4444' : '#7a0400' 
+                  backgroundColor: usagePercent > 85 ? '#ef4444' : '#7a0400' 
                 }
               ]} 
             />
@@ -117,15 +140,16 @@ export default function ExploreAnalytics() {
           </View>
         </View>
 
+        {/* Monthly History */}
         <View style={styles.card}>
           <View style={styles.cardRow}>
             <Calendar size={20} color="#7a0400" />
-            <Text style={styles.cardTitle}>Monthly History</Text>
+            <Text style={styles.cardTitle}>Current Period</Text>
           </View>
           <View style={styles.monthRow}>
             <View>
               <Text style={styles.monthName}>Maret 2026</Text>
-              <Text style={styles.joinDate}>Current Period</Text>
+              <Text style={styles.joinDate}>Data realtime dari Cashflow</Text>
             </View>
             <Text style={styles.monthAmount}>Rp {totalSpend.toLocaleString('id-ID')}</Text>
           </View>
@@ -133,20 +157,21 @@ export default function ExploreAnalytics() {
 
         <TouchableOpacity style={styles.pdfBtn} onPress={exportToPDF}>
           <FileText color="white" size={20} />
-          <Text style={styles.pdfBtnText}>Download PDF Report</Text>
+          <Text style={styles.pdfBtnText}>Share Financial Report</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
+// ... (Styles tetap sama seperti kode Explore kamu sebelumnya)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   header: { backgroundColor: '#7a0400', paddingTop: 60, paddingBottom: 25, paddingHorizontal: 20 },
   headerTitle: { color: 'white', fontSize: 22, fontWeight: 'bold' },
   headerSub: { color: '#ffcdd2', fontSize: 14, marginTop: 4 },
   content: { padding: 20 },
-  card: { backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 20, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  card: { backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 20, elevation: 3 },
   cardRowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 },
   cardTitle: { fontWeight: 'bold', color: '#1e293b', fontSize: 15 },

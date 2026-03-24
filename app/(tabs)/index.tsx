@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   StyleSheet, Text, View, ScrollView, TextInput, 
-  TouchableOpacity, Modal, Dimensions, KeyboardAvoidingView, Platform 
+  TouchableOpacity, Modal, Dimensions, KeyboardAvoidingView, Platform, Alert 
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
 import Svg, { G, Circle, ForeignObject } from 'react-native-svg';
 import { Plus, X, ChevronRight, Landmark, ShoppingBag, Utensils, MoreHorizontal, Banknote, FileText } from 'lucide-react-native';
 
@@ -30,50 +31,75 @@ export default function CashflowScreen() {
   const [selectedCat, setSelectedCat] = useState('transfer');
   const [currentUser, setCurrentUser] = useState('');
 
-  useEffect(() => {
-    const init = async () => {
-      const user = await AsyncStorage.getItem('@current_user');
-      if (user) {
-        setCurrentUser(user);
-        const saved = await AsyncStorage.getItem(`@tx_${user}`);
-        if (saved) setTransactions(JSON.parse(saved));
-      }
-    };
-    init();
-  }, []);
-
-  const handleSave = async () => {
-    if (!title || !amount) return;
-    const date = new Date();
-    const currentMonth = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-
-    const newTx = { 
-      id: Date.now().toString(), 
-      title, 
-      amount: parseFloat(amount), 
-      category: selectedCat, 
-      type: tab,
-      month: currentMonth 
-    };
-
-    const updated = [newTx, ...transactions];
+  // 1. Fungsi Load Data yang sangat teliti
+  const loadData = async () => {
     try {
-      await AsyncStorage.setItem(`@tx_${currentUser}`, JSON.stringify(updated));
+      // Ambil user. Jika tidak ada, coba pakai nama Ferry langsung (sebagai fallback)
+      const user = await AsyncStorage.getItem('@current_user');
+      const activeName = user || "Ferry Irawan Limiadi"; 
+      setCurrentUser(activeName);
+
+      // Coba ambil data dengan nama user, jika gagal ambil data tanpa nama (global)
+      const savedWithName = await AsyncStorage.getItem(`@tx_${activeName}`);
+      const savedGlobal = await AsyncStorage.getItem(`@tx_`);
+      
+      const rawData = savedWithName || savedGlobal || "[]";
+      const parsedData = JSON.parse(rawData);
+      
+      setTransactions(Array.isArray(parsedData) ? parsedData : []);
+    } catch (e) {
+      console.error("Gagal load:", e);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  // 2. Fungsi Simpan yang menjamin data masuk ke user yang benar
+  const handleSave = async () => {
+    if (!title || !amount) {
+      Alert.alert("Error", "Mohon isi semua data.");
+      return;
+    }
+
+    try {
+      const user = await AsyncStorage.getItem('@current_user');
+      const activeName = user || "Ferry Irawan Limiadi";
+
+      const newTx = { 
+        id: Date.now().toString(), 
+        title, 
+        amount: parseFloat(amount) || 0, 
+        category: selectedCat, 
+        type: tab,
+        month: "March 2026" 
+      };
+
+      const updated = [newTx, ...transactions];
+      
+      // SIMPAN KE DUA TEMPAT (Agar aman dan Explore bisa baca)
+      await AsyncStorage.setItem(`@tx_${activeName}`, JSON.stringify(updated));
+      await AsyncStorage.setItem(`@tx_`, JSON.stringify(updated)); // Backup untuk explore
+      
       setTransactions(updated);
       setModalVisible(false); 
       setTitle(''); setAmount('');
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error(e); 
+    }
   };
 
-  const currentData = transactions.filter(t => t.type === tab);
-  const total = currentData.reduce((s, t) => s + t.amount, 0);
+  const currentData = transactions.filter(t => t && t.type === tab);
+  const total = currentData.reduce((s, t) => s + (Number(t.amount) || 0), 0);
 
   const size = 300;
   const center = size / 2;
   const radius = 90;
   const strokeWidth = 16;
   const circumference = 2 * Math.PI * radius;
-
   let cumulativeOffset = 0;
 
   return (
@@ -82,7 +108,7 @@ export default function CashflowScreen() {
         <View style={styles.topRow}>
           <View>
             <Text style={styles.welcomeText}>Selamat Datang,</Text>
-            <Text style={styles.headerTitle}>Ferry Irawan Limiadi</Text>
+            <Text style={styles.headerTitle}>{currentUser}</Text>
           </View>
         </View>
         <View style={styles.tabContainer}>
@@ -101,41 +127,25 @@ export default function CashflowScreen() {
           <ChevronRight size={18} color="#7a0400" />
         </View>
 
-        {/* DIAGRAM ULTRA RESPONSIVE */}
         <View style={styles.chartContainer}>
           <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             <G rotation="-90" origin={`${center}, ${center}`}>
-              {/* Background Circle */}
               <Circle cx={center} cy={center} r={radius} stroke="#f1f5f9" strokeWidth={strokeWidth} fill="transparent" />
-              
-              {/* Data Segments & Floating Icons */}
-              {Object.keys(CAT_CONFIG[tab]).map((key, i) => {
-                const catSum = currentData.filter(t => t.category === key).reduce((s, t) => s + t.amount, 0);
+              {Object.keys(CAT_CONFIG[tab]).map((key) => {
+                const catSum = currentData.filter(t => t.category === key).reduce((s, t) => s + (Number(t.amount) || 0), 0);
                 if (catSum === 0) return null;
-
                 const percentage = (catSum / total);
                 const strokeDash = percentage * circumference;
                 const offset = cumulativeOffset;
                 cumulativeOffset += strokeDash;
-
                 const midAngle = ((offset + strokeDash / 2) / circumference) * 360;
                 const angleRad = (midAngle * Math.PI) / 180;
                 const iconX = center + radius * Math.cos(angleRad);
                 const yPos = center + radius * Math.sin(angleRad);
-
                 const IconComp = CAT_CONFIG[tab][key].icon;
-
                 return (
                   <G key={key}>
-                    <Circle 
-                      cx={center} cy={center} r={radius} 
-                      stroke={CAT_CONFIG[tab][key].color} 
-                      strokeWidth={strokeWidth} 
-                      strokeDasharray={`${strokeDash} ${circumference}`} 
-                      strokeDashoffset={-offset}
-                      fill="transparent"
-                    />
-                    {/* Ikon yang Terkunci ke SVG (Gak bakal kabur) */}
+                    <Circle cx={center} cy={center} r={radius} stroke={CAT_CONFIG[tab][key].color} strokeWidth={strokeWidth} strokeDasharray={`${strokeDash} ${circumference}`} strokeDashoffset={-offset} fill="transparent" />
                     <G rotation="90" origin={`${iconX}, ${yPos}`}>
                         <Circle cx={iconX} cy={yPos} r="16" fill="white" stroke={CAT_CONFIG[tab][key].color} strokeWidth="2" />
                         <ForeignObject x={iconX - 8} y={yPos - 8} width="16" height="16">
@@ -147,8 +157,6 @@ export default function CashflowScreen() {
               })}
             </G>
           </Svg>
-
-          {/* Text Tengah */}
           <View style={styles.centerText}>
             <Text style={styles.labelMid}>Total {tab === 'spending' ? 'Spend' : 'Earn'}</Text>
             <Text style={styles.currencyMid}>IDR</Text>
@@ -156,11 +164,10 @@ export default function CashflowScreen() {
           </View>
         </View>
 
-        {/* List Kategori */}
         <View style={[styles.listSection, { width: '90%' }]}>
           <Text style={styles.listTitle}>By Category</Text>
           {Object.keys(CAT_CONFIG[tab]).map(key => {
-            const sum = currentData.filter(t => t.category === key).reduce((s, t) => s + t.amount, 0);
+            const sum = currentData.filter(t => t.category === key).reduce((s, t) => s + (Number(t.amount) || 0), 0);
             const percent = total > 0 ? ((sum / total) * 100).toFixed(0) : 0;
             const Icon = CAT_CONFIG[tab][key].icon;
             if (sum === 0) return null;
@@ -184,21 +191,27 @@ export default function CashflowScreen() {
         <Plus color="white" size={30} />
       </TouchableOpacity>
 
-      {/* Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalBg}><KeyboardAvoidingView behavior="padding" style={styles.modalCard}>
-          <Text style={styles.mTitle}>Input {tab}</Text>
-          <TextInput style={styles.input} placeholder="Description" value={title} onChangeText={setTitle} />
-          <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-          <View style={styles.catGrid}>
-            {Object.keys(CAT_CONFIG[tab]).map(k => (
-              <TouchableOpacity key={k} onPress={()=>setSelectedCat(k)} style={[styles.catBtn, selectedCat===k && {backgroundColor: '#7a0400'}]}>
-                <Text style={{color: selectedCat===k ? 'white':'#7a0400', fontSize: 12}}>{CAT_CONFIG[tab][k].label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}><Text style={{color:'white', fontWeight:'bold'}}>Save</Text></TouchableOpacity>
-        </KeyboardAvoidingView></View>
+        <View style={styles.modalBg}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalCard}>
+            <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+              <Text style={styles.mTitle}>Input {tab}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}><X size={24} color="#64748b" /></TouchableOpacity>
+            </View>
+            <TextInput style={styles.input} placeholder="Description" value={title} onChangeText={setTitle} />
+            <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+            <View style={styles.catGrid}>
+              {Object.keys(CAT_CONFIG[tab]).map(k => (
+                <TouchableOpacity key={k} onPress={()=>setSelectedCat(k)} style={[styles.catBtn, selectedCat===k && {backgroundColor: '#7a0400'}]}>
+                  <Text style={{color: selectedCat===k ? 'white':'#7a0400', fontSize: 12}}>{CAT_CONFIG[tab][k].label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+              <Text style={{color:'white', fontWeight:'bold'}}>Save Transaction</Text>
+            </TouchableOpacity>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
@@ -222,8 +235,6 @@ const styles = StyleSheet.create({
   labelMid: { fontSize: 12, color: '#7a0400' },
   currencyMid: { fontSize: 14, fontWeight: 'bold', color: '#7a0400', marginTop: 5 },
   amountMid: { fontSize: 22, fontWeight: 'bold', color: '#7a0400' },
-  infoBox: { backgroundColor: '#eef6fc', padding: 15, borderRadius: 12, marginVertical: 10 },
-  infoText: { color: '#7a0400', fontSize: 14, fontWeight: '500' },
   listSection: { paddingBottom: 100, marginTop: 10 },
   listTitle: { fontSize: 16, fontWeight: 'bold', color: '#7a0400', marginBottom: 20 },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },

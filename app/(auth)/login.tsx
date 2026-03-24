@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Lock, User, Eye, EyeOff, ArrowRight, UserPlus, HelpCircle } from 'lucide-react-native';
 
-export default function RootLayout() {
+export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
