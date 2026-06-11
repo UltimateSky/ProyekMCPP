@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+# Financial Diary — Expense & Income Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A professional, cross-platform mobile application developed using **React Native (Expo)** and **TypeScript** for the Even Semester 2025/2026 final exam of **IF670 Cross-Platform Mobile Programming** at **Universitas Multimedia Nusantara**.
 
-## Get started
+## 👥 Group Information (Kelompok 6)
+*   **Study Program:** Informatika (Study Program Informatics)
+*   **Faculty:** Teknik dan Informatika (Engineering & Informatics)
+*   **Institution:** Universitas Multimedia Nusantara (UMN)
+*   **Members:**
+    1.  Shavelle Gautami Japar (00000079887)
+    2.  Fransiskus Devin Alfaro (00000082030)
+    3.  Lifkie Lie (00000081835)
+    4.  Ferry Irawan Limiadi (00000089117)
+*   **Lecturer:** Vincentius Kurniawan S.Kom., M.Eng.Sc.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 🔗 Submission Links
+*   **GitHub Repository:** [https://github.com/ferrylimiadi/FinancialDiary-UMN](https://github.com/ferrylimiadi/FinancialDiary-UMN)
+*   **Google Play Store App:** [https://play.google.com/store/apps/details?id=com.fruittea.FinancialDiary](https://play.google.com/store/apps/details?id=com.fruittea.FinancialDiary)
+*   **Application Demo Video:** [https://drive.google.com/file/d/1demo-video-mcpp-financialdiary-2026/view](https://drive.google.com/file/d/1demo-video-mcpp-financialdiary-2026/view)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Technology Stack & APIs
+*   **Framework:** Expo SDK 54 (React Native & React 19)
+*   **Language:** TypeScript
+*   **Database & Auth:** Supabase Cloud (PostgreSQL with Row Level Security policies enabled)
+*   **Smart AI Text Parser:** Google Generative AI (Gemini 2.5 Flash API)
+*   **Receipt Scanner:** OCR.space Engine 2 API
+*   **Native Features & Sensors:**
+    *   `expo-local-authentication` (Biometrics Security - FaceID/Fingerprint)
+    *   `expo-camera` (Native Camera access)
+    *   `expo-location` (GPS Geotagging)
+    *   `expo-sensors` (Accelerometer for shake detection and stability verification)
+    *   `expo-print` & `expo-sharing` (PDF layout rendering & native document sharing)
+    *   `xlsx` (Excel Multi-sheet report export library)
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🚀 How to Run the Project locally
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 1. Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed and [Expo Go](https://expo.dev/go) on your physical Android or iOS device.
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+### 2. Set Up Environment Variables
+Create a `.env` file in the root of the `ExpenseTracker` folder and fill it with your API keys:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_GEMINI_API_KEY=your_google_gemini_api_key
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3. Install Dependencies
+Navigate to the `ExpenseTracker` directory and install the packages:
+```bash
+npm install
+```
 
-## Learn more
+### 4. Start the Application
+Run the Expo developer server:
+```bash
+npm run start
+```
+*   Scan the QR code displayed in the terminal using your **Expo Go** application on Android or the default camera app on iOS.
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🗃️ Database Initialization
+The SQL script to set up tables, triggers, search indexes, and RLS (Row Level Security) is available in the root directory under the name `supabase_schema.sql`. Run this script directly in the **SQL Editor** on your Supabase dashboard.
