@@ -2,22 +2,18 @@
 
 A professional, cross-platform mobile application developed using **React Native (Expo)** and **TypeScript** for the Even Semester 2025/2026 final exam of **IF670 Cross-Platform Mobile Programming** at **Universitas Multimedia Nusantara**.
 
-## 👥 Group Information (Kelompok 6)
+## 👥 Group Information (Kelompok 8)
 *   **Study Program:** Informatika (Study Program Informatics)
 *   **Faculty:** Teknik dan Informatika (Engineering & Informatics)
 *   **Institution:** Universitas Multimedia Nusantara (UMN)
 *   **Members:**
-    1.  Shavelle Gautami Japar (00000079887)
-    2.  Fransiskus Devin Alfaro (00000082030)
-    3.  Lifkie Lie (00000081835)
-    4.  Ferry Irawan Limiadi (00000089117)
+    1.  Ferry Irawan Limiadi (00000089117)
 *   **Lecturer:** Vincentius Kurniawan S.Kom., M.Eng.Sc.
 
 ---
 
 ## 🔗 Submission Links
 *   **GitHub Repository:** [https://github.com/ferrylimiadi/FinancialDiary-UMN](https://github.com/ferrylimiadi/FinancialDiary-UMN)
-*   **Google Play Store App:** [https://play.google.com/store/apps/details?id=com.fruittea.FinancialDiary](https://play.google.com/store/apps/details?id=com.fruittea.FinancialDiary)
 *   **Application Demo Video:** [https://drive.google.com/file/d/1demo-video-mcpp-financialdiary-2026/view](https://drive.google.com/file/d/1demo-video-mcpp-financialdiary-2026/view)
 
 ---
