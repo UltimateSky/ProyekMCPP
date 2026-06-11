@@ -13,8 +13,10 @@ A professional, cross-platform mobile application developed using **React Native
 ---
 
 ## 🔗 Submission Links
-*   **GitHub Repository:** [https://github.com/ferrylimiadi/FinancialDiary-UMN](https://github.com/ferrylimiadi/FinancialDiary-UMN)
-*   **Application Demo Video:** [https://drive.google.com/file/d/1demo-video-mcpp-financialdiary-2026/view](https://drive.google.com/file/d/1demo-video-mcpp-financialdiary-2026/view)
+*   **GitHub Repository:** [https://github.com/UltimateSky/ProyekMCPP](https://github.com/UltimateSky/ProyekMCPP)
+*   **Application Demo Video:** [https://youtu.be/msHMMm23dew](https://youtu.be/msHMMm23dew)
+*   **Application Demo Video Drive:** [https://drive.google.com/file/d/1H-P1t8rNz1RpayO7YAyfZaSmwx7nuu4-/view?usp=sharing](https://drive.google.com/file/d/1H-P1t8rNz1RpayO7YAyfZaSmwx7nuu4-/view?usp=sharing)
+
 
 ---
 
